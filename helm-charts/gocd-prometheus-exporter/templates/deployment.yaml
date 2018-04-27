@@ -2,10 +2,6 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: {{ template "gocd-prometheus-exporter.fullname" . }}
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "9100"
-    prometheus.io/path: "/"
   labels:
     app: {{ template "gocd-prometheus-exporter.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
@@ -15,6 +11,10 @@ spec:
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/"
       labels:
         app: {{ template "gocd-prometheus-exporter.name" . }}
         release: {{ .Release.Name }}
