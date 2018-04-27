@@ -13,6 +13,7 @@ from yagocd import Yagocd
 from prometheus_client import start_http_server
 from prometheus_client import Histogram
 from prometheus_client import Counter
+from prometheus_client import Summary
 
 go = Yagocd(
 	server=os.getenv("GOCD_URL"),
@@ -23,10 +24,10 @@ go = Yagocd(
 )
 
 
-job_duration = Histogram('gocd_pipeline_stage_job_duration', 'length of jobs running on gocd', ["pipeline_group", "pipeline", "stage", "job"])
+job_duration = Summary('gocd_pipeline_stage_job_duration', 'length of jobs running on gocd', ["pipeline_group", "pipeline", "stage", "job"])
 group_count = Counter('gocd_group_count', 'gocd group count', ["pipeline_group"])
 pipeline_count = Counter('gocd_pipeline_count', 'gocd pipeline count', ["pipeline_group", "pipeline"])
-stage_count = Counter('gocd_pipeline_stage_count', 'gocd stage count', ["pipeline_group", "pipeline", "stage"])
+stage_count = Counter('gocd_pipeline_stage_count', 'gocd stage count', ["pipeline_group", "pipeline", "stage", "result"])
 job_count = Counter('gocd_pipeline_stage_job_counter', 'gocd job count', ["pipeline_group", "pipeline", "stage", "job"])
 start_http_server( int(os.getenv("PROMETHEUS_PORT") or 8000) )
 
@@ -61,6 +62,7 @@ while True:
 							"stage": {
 								"name": stage.data.name,
 								"counter": stage.data.counter,
+								"result": stage.data.result,
 							},
 							"job": {
 								"name": job.data.name,
@@ -87,7 +89,8 @@ while True:
 								stage_count.labels(
 										pipeline_group = obj["pipeline"]["group"],
 										pipeline = obj["pipeline"]["name"],
-										stage = obj["stage"]["name"]
+										stage = obj["stage"]["name"],
+										result = obj["stage"]["result"]
 								).inc(1)
 
 								job_count.labels(

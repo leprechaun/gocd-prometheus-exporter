@@ -1,0 +1,124 @@
+pipelines:
+  gocd-exporter-build:
+    group: gocd-exporter
+    label_template: "0.1-${COUNT}-${git[:8]}"
+    locking: "on"
+    timer:
+      spec: "* * * * * ? *"
+      only_on_changes: yes
+    materials:
+      git:
+        type: configrepo
+    environment_variables:
+      REGISTRY_HOST: registry.k8s.fscker.org
+      REGISTRY_IMAGE: ci-stuff/gocd-prometheus-exporter
+      HELM_CHART_NAME: gocd-prometheus-exporter
+    stages:
+      - build-image:
+          tasks:
+            - script: |
+                docker build --pull -t ${REGISTRY_HOST}/${REGISTRY_IMAGE}:${GO_PIPELINE_LABEL} \
+                  --build-arg=BUILD_NUMBER=${GO_PIPELINE_COUNTER} \
+                  --build-arg=GIT_COMMIT=${GO_REVISION_GIT} \
+                  --build-arg=VERSION=${GO_PIPELINE_LABEL} \
+                  --label version=${GO_PIPELINE_LABEL} \
+                  --label git-repo=http://gogs.k8s.fscker.org/ci-stuff/gocd-prometheus-exporter.git \
+                  --label git-commit=${GO_REVISION_GIT} \
+                  --label go-pipeline=${GO_PIPELINE_NAME} \
+                  --label go-pipeline-counter=${GO_PIPELINE_COUNTER} \
+                  --label go-pipeline-stage=${GO_STAGE_NAME} \
+                  --label go-pipeline-stage-counter=${GO_STAGE_COUNTER} \
+                  --label go-pipeline-job=${GO_JOB_NAME} \
+                  .
+
+                docker tag ${REGISTRY_HOST}/${REGISTRY_IMAGE}:${GO_PIPELINE_LABEL} ${REGISTRY_HOST}/${REGISTRY_IMAGE}:latest
+                docker push ${REGISTRY_HOST}/${REGISTRY_IMAGE}:${GO_PIPELINE_LABEL}
+                docker push ${REGISTRY_HOST}/${REGISTRY_IMAGE}:latest
+
+      - package-chart:
+          tasks:
+            - script: |
+                set -e
+
+                sed -i -e "s/tag: latest/tag: $GO_PIPELINE_LABEL/g" helm-charts/${HELM_CHART_NAME}/values.yaml
+
+                helm package --version ${GO_PIPELINE_LABEL} ./helm-charts/${HELM_CHART_NAME}/
+                curl --data-binary "@${HELM_CHART_NAME}-${GO_PIPELINE_LABEL}.tgz" http://chart-museum.k8s.fscker.org/api/charts
+
+          artifacts:
+            - build:
+                source: gocd-prometheus-exporter-*.tgz
+                destination: ./chart/
+            - build:
+                source: deploy/
+                destination: ./
+
+  gocd-exporter-deploy-dev:
+    group: gocd-exporter
+    label_template: "${upstream}"
+    locking: "on"
+    timer:
+      spec: "* * * * * ? *"
+      only_on_changes: yes
+    environment_variables:
+      HELM_CHART_NAME: gocd-prometheus-exporter
+      HELM_RELEASE_BASE_NAME: gocd-prometheus-exporter
+      HELM_DEPLOY_NAMESPACE: dev
+    materials:
+      upstream:
+        pipeline: gocd-exporter-build
+        stage: package-chart
+    stages:
+      - deploy-chart:
+          tasks:
+            - fetch:
+                pipeline: gocd-exporter-build
+                stage: package-chart
+                job: package-chart
+                source: chart/
+                destination: ./
+            - fetch:
+                pipeline: gocd-exporter-build
+                stage: package-chart
+                job: package-chart
+                source: deploy/
+                destination: ./
+            - script: |
+                helm upgrade --debug --wait --install \
+                  --namespace ${HELM_DEPLOY_NAMESPACE} \
+                  ${HELM_RELEASE_BASE_NAME}-dev ./chart/${HELM_CHART_NAME}* \
+                  --values deploy/dev-values.yaml
+
+  gocd-exporter-deploy-prod:
+    group: gocd-exporter
+    label_template: "${upstream}"
+    locking: "on"
+    environment_variables:
+      HELM_CHART_NAME: gocd-prometheus-exporter
+      HELM_RELEASE_BASE_NAME: gocd-prometheus-exporter
+      HELM_DEPLOY_NAMESPACE: ci
+    materials:
+      upstream:
+        pipeline: gocd-exporter-deploy-dev
+        stage: deploy-chart
+    stages:
+      - deploy-chart:
+          approval: manual
+          tasks:
+            - fetch:
+                pipeline: gocd-exporter-build/gocd-exporter-deploy-dev
+                stage: package-chart
+                job: package-chart
+                source: chart/
+                destination: ./
+            - fetch:
+                pipeline: gocd-exporter-build/gocd-exporter-deploy-dev
+                stage: package-chart
+                job: package-chart
+                source: deploy/
+                destination: ./
+            - script: |
+                helm upgrade --debug --wait --install \
+                  --namespace ${HELM_DEPLOY_NAMESPACE} \
+                  ${HELM_RELEASE_BASE_NAME}-${HELM_DEPLOY_NAMESPACE} ./chart/${HELM_CHART_NAME}* \
+                  --values deploy/prod-values.yaml

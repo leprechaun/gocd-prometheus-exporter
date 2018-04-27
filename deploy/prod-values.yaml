@@ -1,0 +1,9 @@
+replicacount: 1
+stage: prod
+ingress:
+  enabled: true
+  # used to create an ingress record.
+  hosts:
+    - gocd-prometheus-exporter.ci.k8s.fscker.org
+configuration:
+  gocd_url: http://gocd-server-gocd-server.ci.svc.cluster.local/
