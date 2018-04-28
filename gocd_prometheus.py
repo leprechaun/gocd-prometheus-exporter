@@ -24,11 +24,11 @@ go = Yagocd(
 )
 
 
-job_duration = Summary('gocd_pipeline_stage_job_duration', 'length of jobs running on gocd', ["pipeline_group", "pipeline", "stage", "job"])
+job_duration = Summary('gocd_pipeline_stage_job_duration', 'length of jobs running on gocd', ["pipeline_group", "pipeline", "stage", "job", "job_key"])
 group_count = Counter('gocd_group_count', 'gocd group count', ["pipeline_group"])
-pipeline_count = Counter('gocd_pipeline_count', 'gocd pipeline count', ["pipeline_group", "pipeline"])
-stage_count = Counter('gocd_pipeline_stage_count', 'gocd stage count', ["pipeline_group", "pipeline", "stage", "result"])
-job_count = Counter('gocd_pipeline_stage_job_counter', 'gocd job count', ["pipeline_group", "pipeline", "stage", "job"])
+pipeline_count = Counter('gocd_pipeline_count', 'gocd pipeline count', ["pipeline_group", "pipeline", "pipeline_key"])
+stage_count = Counter('gocd_pipeline_stage_count', 'gocd stage count', ["pipeline_group", "pipeline", "stage", "result", "stage_key"])
+job_count = Counter('gocd_pipeline_stage_job_counter', 'gocd job count', ["pipeline_group", "pipeline", "stage", "job", "job_key"])
 start_http_server( int(os.getenv("PROMETHEUS_PORT") or 8000) )
 
 largest_id_by_job = {}
@@ -51,27 +51,31 @@ while True:
 							duration = result[0][1]
 						except:
 							duration = "unknown"
-							continue
+							pass
+
 
 						obj = {
 							"pipeline": {
+								"key": pipeline.group + "/" + pipeline.data.name,
 								"group": pipeline.group,
 								"name": pipeline.data.name,
 								"counter": instance.data.counter
 							},
 							"stage": {
+								"key": pipeline.group + "/" + pipeline.data.name + "/" + stage.data.name,
 								"name": stage.data.name,
 								"counter": stage.data.counter,
 								"result": stage.data.result,
 							},
 							"job": {
+								"key": pipeline.group + "/" + pipeline.data.name + "/" + stage.data.name + "/" + job.data.name,
 								"name": job.data.name,
 								"id": job.data.id,
 								"duration": int(job.properties["cruise_job_duration"])
 							}
 						}
+						print(obj["job"]["key"])
 
-						job_key = "-".join([obj["pipeline"]["group"], obj["stage"]["name"], obj["job"]["name"]])
 
 						if not is_first_run:
 							if obj["job"]["id"] > largest_id_by_job.get( job_key, 0 ):
@@ -83,21 +87,24 @@ while True:
 
 								pipeline_count.labels(
 										pipeline_group = obj["pipeline"]["group"],
-										pipeline = obj["pipeline"]["name"]
+										pipeline = obj["pipeline"]["name"],
+										pipeline_key = obj["pipeline"]["key"]
 								).inc(1)
 
 								stage_count.labels(
 										pipeline_group = obj["pipeline"]["group"],
 										pipeline = obj["pipeline"]["name"],
 										stage = obj["stage"]["name"],
-										result = obj["stage"]["result"]
+										result = obj["stage"]["result"],
+										stage_key = obj["stage"]["key"]
 								).inc(1)
 
 								job_count.labels(
 										pipeline_group = obj["pipeline"]["group"],
 										pipeline = obj["pipeline"]["name"],
 										stage = obj["stage"]["name"],
-										job = obj["job"]["name"]
+										job = obj["job"]["name"],
+										job_key = obj["job"]["key"]
 								).inc(1)
 
 
@@ -105,7 +112,8 @@ while True:
 									pipeline_group = obj["pipeline"]["group"],
 									pipeline = obj["pipeline"]["name"],
 									stage = obj["stage"]["name"],
-									job = obj["job"]["name"]
+									job = obj["job"]["name"],
+									job_key = obj["job"]["key"]
 								).observe(
 									obj["job"]["duration"]
 								)
