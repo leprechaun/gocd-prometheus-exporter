@@ -78,9 +78,9 @@ while True:
 
 
 						if not is_first_run:
-							if obj["job"]["id"] > largest_id_by_job.get( job_key, 0 ):
-								print(" - ".join( [job_key, str(obj["job"]["duration"])]))
-								largest_id_by_job[ job_key ] = obj["job"]["id"]
+							if obj["job"]["id"] > largest_id_by_job.get( obj["job"]["key"], 0 ):
+								print(" - ".join( [obj["job"]["key"], str(obj["job"]["duration"])]))
+								largest_id_by_job[ obj["job"]["key"] ] = obj["job"]["id"]
 								group_count.labels(
 										pipeline_group = obj["pipeline"]["group"]
 								).inc(1)
