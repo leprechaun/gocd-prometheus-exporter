@@ -46,13 +46,9 @@ while True:
 					for job in stage:   # Iterate over each job of some pipeline
 					# print([ pipeline.data.id ], [job.data.id, job.data.name, job.data.result]])
 						try:
-							props = job.properties.items()
-							result = [a for a in props if a[0] == "cruise_job_duration" ]
-							duration = result[0][1]
+							duration = job.properties["cruise_job_duration"]
 						except:
 							duration = 0
-							pass
-
 
 						obj = {
 							"pipeline": {
