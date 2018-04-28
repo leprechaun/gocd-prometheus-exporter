@@ -50,7 +50,7 @@ while True:
 							result = [a for a in props if a[0] == "cruise_job_duration" ]
 							duration = result[0][1]
 						except:
-							duration = "unknown"
+							duration = 0
 							pass
 
 
@@ -71,7 +71,7 @@ while True:
 								"key": pipeline.group + "/" + pipeline.data.name + "/" + stage.data.name + "/" + job.data.name,
 								"name": job.data.name,
 								"id": job.data.id,
-								"duration": int(job.properties["cruise_job_duration"])
+								"duration": int(duration)
 							}
 						}
 						print(obj["job"]["key"])
