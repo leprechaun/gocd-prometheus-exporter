@@ -45,11 +45,6 @@ while True:
 				for stage in instance:  # Iterate over each stages of some pipeline instance
 					for job in stage:   # Iterate over each job of some pipeline
 					# print([ pipeline.data.id ], [job.data.id, job.data.name, job.data.result]])
-						try:
-							duration = job.properties["cruise_job_duration"]
-						except:
-							duration = 0
-
 						obj = {
 							"pipeline": {
 								"key": pipeline.group + "/" + pipeline.data.name,
