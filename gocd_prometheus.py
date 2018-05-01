@@ -27,6 +27,7 @@ go = Yagocd(
 	}
 )
 
+
 start_http_server(8000)
 
 # go.stages.get(pipeline_name="nginx-static-app-build", pipeline_counter="145", stage_name="build-image", stage_counter="3").jobs()
@@ -35,21 +36,27 @@ watched = set([])
 
 watched_jobs = set([])
 
-job_count_by_state = Gauge('gocd_job_count_by_state', 'Number of jobs with status', ["state"])
+job_count_by_state = Gauge(
+	'gocd_job_count_by_state',
+	'Number of jobs with status',
+	["state"]
+)
+
+job_time_spent_by_state = Summary(
+	'gocd_job_time_spent_by_state',
+	'time spent in jobs',
+	["pipeline_group", "pipeline", "stage", "stage_key", "job", "job_key", "state"]
+)
 
 while True:
 	try:
 		tree = ET.fromstring(requests.get('https://gocd.k8s.fscker.org/go/cctray.xml').text)
-		#tree = ET.fromstring(cctray.text)
 
 		for project in tree.findall("Project"):
-			#print(project.attrib)
-			# {'lastBuildLabel': '0.1-21-97dfc48d', 'name': 'gocd-exporter-build :: build-image', 'activity': 'Sleeping', 'lastBuildStatus': 'Success', 'webUrl': 'https://gocd.k8s.fscker.org/go/pipelines/gocd-exporter-build/21/build-image/1', 'lastBuildTime': '2018-04-28T10:42:45'}
 			if project.attrib["activity"] != "Sleeping":
 				pipeline = project.attrib["name"].split(" :: ")
 				if len(pipeline) == 3:
 					parsedLink = project.attrib["webUrl"].split("/")
-					# print project.attrib["name"] + " " + project.attrib["activity"] + " " + parsedLink[8] + " " + parsedLink[10]
 					to_add = (
 						pipeline[0],
 						pipeline[1],
@@ -58,12 +65,9 @@ while True:
 						parsedLink[10]
 					)
 					if to_add not in watched:
-						#print("add", to_add)
 						watched.add(to_add)
 
-		#go.pipelines["nginx-static-app-deploy-prod"][67]["dummer-stage"]
 		to_remove = set([])
-
 
 		job_counts_by_state = {
 			"Scheduled": 0,
@@ -93,10 +97,76 @@ while True:
 				to_remove.add(i)
 		
 		for i in to_remove:
-			s = go.pipelines[ i[0] ][ i[3] ][ i[1] ]
-			#print("remove", i, s.data.result )
-			#print(s.data)
-			#print('remove', i)
+			pipeline = go.pipelines[ i[0] ]
+			instance = pipeline[ i[3] ]
+			stage = instance[ i[1] ]
+			jobs = go.stages.get(
+				pipeline_name = pipeline.data.name,
+				pipeline_counter = instance.data.counter,
+				stage_name = stage.data.name,
+				stage_counter = stage.data.counter
+			).jobs()
+
+			# ["pipeline_group", "pipeline", "stage", "stage_key", "job", "job_key"]
+			stage_key = "/".join([ pipeline.group, pipeline.data.name, stage.data.name])
+			job_key = "/".join([ pipeline.group, pipeline.data.name, stage.data.name, job.data.name])
+			# job_time_spent_by_state = Summary(
+			for job in jobs:
+				state_dates = {x.state: x.state_change_time for x in job.data.job_state_transitions}
+				print(state_dates)
+
+				scheduled = state_dates["Assigned"] - state_dates["Scheduled"]
+				assigned = state_dates["Preparing"] - state_dates["Assigned"]
+				preparing = state_dates["Building"] - state_dates["Preparing"]
+				building = state_dates["Completing"] - state_dates["Building"]
+				completing = state_dates["Completed"] - state_dates["Completing"]
+
+				job_time_spent_by_state.labels(
+					pipeline_group = pipeline.group,
+					pipeline = pipeline.data.name,
+					stage = stage.data.name,
+					stage_key = stage_key,
+					job = job.data.name,
+					job_key = job_key,
+					state = "Scheduled"
+				).observe(scheduled / 1000)
+				job_time_spent_by_state.labels(
+					pipeline_group = pipeline.group,
+					pipeline = pipeline.data.name,
+					stage = stage.data.name,
+					stage_key = stage_key,
+					job = job.data.name,
+					job_key = job_key,
+					state = "Assigned"
+				).observe(assigned / 1000)
+				job_time_spent_by_state.labels(
+					pipeline_group = pipeline.group,
+					pipeline = pipeline.data.name,
+					stage = stage.data.name,
+					stage_key = stage_key,
+					job = job.data.name,
+					job_key = job_key,
+					state = "Preparing"
+				).observe(preparing / 1000)
+				job_time_spent_by_state.labels(
+					pipeline_group = pipeline.group,
+					pipeline = pipeline.data.name,
+					stage = stage.data.name,
+					stage_key = stage_key,
+					job = job.data.name,
+					job_key = job_key,
+					state = "Building"
+				).observe(building / 1000)
+				job_time_spent_by_state.labels(
+					pipeline_group = pipeline.group,
+					pipeline = pipeline.data.name,
+					stage = stage.data.name,
+					stage_key = stage_key,
+					job = job.data.name,
+					job_key = job_key,
+					state = "Completing"
+				).observe(completing / 1000)
+
 			watched.remove(i)
 
 		for state in job_counts_by_state:
@@ -105,5 +175,6 @@ while True:
 			).set(job_counts_by_state[state])
 
 		time.sleep(1)
+
 	except(requests.exceptions.ConnectionError):
 		pass
