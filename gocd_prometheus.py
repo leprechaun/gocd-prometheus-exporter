@@ -74,6 +74,7 @@ while True:
 			"Assigned": 0,
 			"Preparing": 0,
 			"Building": 0,
+			"Completing": 0,
 			"Completed": 0
 		}
 
