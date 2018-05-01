@@ -6,4 +6,4 @@ ingress:
   hosts:
     - gocd-prometheus-exporter.ci.k8s.fscker.org
 configuration:
-  gocd_url: http://gocd-server-gocd-server.ci.svc.cluster.local/
+  gocd_url: https://gocd.k8s.fscker.org/

@@ -19,18 +19,21 @@ from prometheus_client import Gauge
 
 import xml.etree.ElementTree as ET
 
+GOCD_SSL_VERIFY = os.getenv("GOCD_SSL_VERIFY", True) in ["true", "True", "yes", "1"]
+GOCD_URL = os.getenv("GOCD_URL")
+EXPOSE_PORT = os.getenv("PROMETHEUS_PORT", 8000)
+
+start_http_server(EXPOSE_PORT)
+
 go = Yagocd(
-	server=os.getenv("GOCD_URL"),
+	server = GOCD_URL,
 	auth=(os.getenv("GOCD_USERNAME"), os.getenv("GOCD_PASSWORD")),
-	options={
-		'verify': os.getenv("GOCD_SSL_VERIFY", True) in ["true", "True", "yes", "1"]
+	options = {
+		'verify': GOCD_SSL_VERIFY
 	}
 )
 
 
-start_http_server(8000)
-
-# go.stages.get(pipeline_name="nginx-static-app-build", pipeline_counter="145", stage_name="build-image", stage_counter="3").jobs()
 
 watched = set([])
 
@@ -39,18 +42,18 @@ watched_jobs = set([])
 job_count_by_state = Gauge(
 	'gocd_job_count_by_state',
 	'Number of jobs with status',
-	["state"]
+	["gocd_url", "state"]
 )
 
 job_time_spent_by_state = Summary(
 	'gocd_job_time_spent_by_state',
 	'time spent in jobs',
-	["pipeline_group", "pipeline", "stage", "stage_key", "job", "job_key", "state"]
+	["gocd_url", "pipeline_group", "pipeline", "stage", "stage_key", "job", "job_key", "state"]
 )
 
 while True:
 	try:
-		tree = ET.fromstring(requests.get('https://gocd.k8s.fscker.org/go/cctray.xml').text)
+		tree = ET.fromstring(requests.get( os.getenv("GOCD_URL") + 'go/cctray.xml', verify=GOCD_SSL_VERIFY).text)
 
 		for project in tree.findall("Project"):
 			if project.attrib["activity"] != "Sleeping":
@@ -123,6 +126,7 @@ while True:
 				completing = state_dates["Completed"] - state_dates["Completing"]
 
 				job_time_spent_by_state.labels(
+					gocd_url = GOCD_URL,
 					pipeline_group = pipeline.group,
 					pipeline = pipeline.data.name,
 					stage = stage.data.name,
@@ -132,6 +136,7 @@ while True:
 					state = "Scheduled"
 				).observe(scheduled / 1000)
 				job_time_spent_by_state.labels(
+					gocd_url = GOCD_URL,
 					pipeline_group = pipeline.group,
 					pipeline = pipeline.data.name,
 					stage = stage.data.name,
@@ -141,6 +146,7 @@ while True:
 					state = "Assigned"
 				).observe(assigned / 1000)
 				job_time_spent_by_state.labels(
+					gocd_url = GOCD_URL,
 					pipeline_group = pipeline.group,
 					pipeline = pipeline.data.name,
 					stage = stage.data.name,
@@ -150,6 +156,7 @@ while True:
 					state = "Preparing"
 				).observe(preparing / 1000)
 				job_time_spent_by_state.labels(
+					gocd_url = GOCD_URL,
 					pipeline_group = pipeline.group,
 					pipeline = pipeline.data.name,
 					stage = stage.data.name,
@@ -159,6 +166,7 @@ while True:
 					state = "Building"
 				).observe(building / 1000)
 				job_time_spent_by_state.labels(
+					gocd_url = GOCD_URL,
 					pipeline_group = pipeline.group,
 					pipeline = pipeline.data.name,
 					stage = stage.data.name,
@@ -172,6 +180,7 @@ while True:
 
 		for state in job_counts_by_state:
 			job_count_by_state.labels(
+				gocd_url = GOCD_URL,
 				state=state
 			).set(job_counts_by_state[state])
 
