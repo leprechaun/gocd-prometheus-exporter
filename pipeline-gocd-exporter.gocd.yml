@@ -22,7 +22,7 @@ pipelines:
                   --build-arg=GIT_COMMIT=${GO_REVISION_GIT} \
                   --build-arg=VERSION=${GO_PIPELINE_LABEL} \
                   --label version=${GO_PIPELINE_LABEL} \
-                  --label git-repo=http://gogs.k8s.fscker.org/ci-stuff/gocd-prometheus-exporter.git \
+                  --label git-repo=$(git remote -v | head -n 1 | awk '{ print $2 }') \
                   --label git-commit=${GO_REVISION_GIT} \
                   --label go-pipeline=${GO_PIPELINE_NAME} \
                   --label go-pipeline-counter=${GO_PIPELINE_COUNTER} \
