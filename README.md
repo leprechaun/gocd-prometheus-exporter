@@ -29,3 +29,5 @@ This only increments once a stage is completed.
 ```
 
 ## Example dashboard
+
+![example dashboard](https://i.imgur.com/Ym6wIrk.png)
