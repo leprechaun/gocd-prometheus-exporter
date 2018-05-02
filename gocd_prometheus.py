@@ -22,21 +22,26 @@ import xml.etree.ElementTree as ET
 GOCD_SSL_VERIFY = os.getenv("GOCD_SSL_VERIFY", True) in ["true", "True", "yes", "1"]
 GOCD_URL = os.getenv("GOCD_URL")
 EXPOSE_PORT = os.getenv("PROMETHEUS_PORT", 8000)
+GOCD_USERNAME = os.getenv("GOCD_USERNAME")
+GOCD_PASSWORD = os.getenv("GOCD_PASSWORD")
+
+if GOCD_USERNAME != None and GOCD_PASSWORD != None:
+	credentials = (GOCD_USERNAME, GOCD_PASSWORD)
+else:
+	credentials = None
 
 start_http_server(EXPOSE_PORT)
 
 go = Yagocd(
 	server = GOCD_URL,
-	auth=(os.getenv("GOCD_USERNAME"), os.getenv("GOCD_PASSWORD")),
+	auth=credentials,
 	options = {
 		'verify': GOCD_SSL_VERIFY
 	}
 )
 
 
-
 watched = set([])
-
 watched_jobs = set([])
 
 job_count_by_state = Gauge(
