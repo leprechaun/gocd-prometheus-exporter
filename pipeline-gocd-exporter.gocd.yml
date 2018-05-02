@@ -14,6 +14,13 @@ pipelines:
       REGISTRY_IMAGE: ci-stuff/gocd-prometheus-exporter
       HELM_CHART_NAME: gocd-prometheus-exporter
     stages:
+      - codestyle:
+          tasks:
+            - script: |
+                set -e
+
+                ./auto/codestyle
+
       - build-image:
           tasks:
             - script: |
