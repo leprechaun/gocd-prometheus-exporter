@@ -174,11 +174,6 @@ while True:
                 }
 
                 scheduled = dates["Assigned"] - dates["Scheduled"]
-                assigned = dates["Preparing"] - dates["Assigned"]
-                preparing = dates["Building"] - dates["Preparing"]
-                building = dates["Completing"] - dates["Building"]
-                completing = dates["Completed"] - dates["Completing"]
-
                 job_time_spent_by_state.labels(
                     gocd_url=GOCD_URL,
                     pipeline_group=pipeline.group,
@@ -189,6 +184,8 @@ while True:
                     job_key=job_key,
                     state="Scheduled"
                 ).observe(scheduled / 1000)
+
+                assigned = dates["Preparing"] - dates["Assigned"]
                 job_time_spent_by_state.labels(
                     gocd_url=GOCD_URL,
                     pipeline_group=pipeline.group,
@@ -199,6 +196,8 @@ while True:
                     job_key=job_key,
                     state="Assigned"
                 ).observe(assigned / 1000)
+
+                preparing = dates["Building"] - dates["Preparing"]
                 job_time_spent_by_state.labels(
                     gocd_url=GOCD_URL,
                     pipeline_group=pipeline.group,
@@ -209,6 +208,8 @@ while True:
                     job_key=job_key,
                     state="Preparing"
                 ).observe(preparing / 1000)
+
+                building = dates["Completing"] - dates["Building"]
                 job_time_spent_by_state.labels(
                     gocd_url=GOCD_URL,
                     pipeline_group=pipeline.group,
@@ -219,6 +220,8 @@ while True:
                     job_key=job_key,
                     state="Building"
                 ).observe(building / 1000)
+
+                completing = dates["Completed"] - dates["Completing"]
                 job_time_spent_by_state.labels(
                     gocd_url=GOCD_URL,
                     pipeline_group=pipeline.group,
