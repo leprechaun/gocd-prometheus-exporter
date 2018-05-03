@@ -28,6 +28,14 @@ Where $STATE is on of {Scheduled,Assigned,Preparing,Building,Completing}
 This only increments once a stage is completed.
 ```
 
+```
+# HELP gocd_job_latest_date pass or fail of the latest job run
+# TYPE gocd_job_latest_date gauge
+gocd_job_latest_date{gocd_url="$GOCD_URL",job="$JOB",job_key="$PIPELINE_GROUP/$PIPELINE/$STAGE/$JOB",pipeline="$PIPELINE",pipeline_group="$PIPELINE_GROUP",stage="$STAGE",stage_key="$PIPELINE_GROUP/$PIPELINE/$STAGE", result="$RESULT"} 1525350072.0
+
+Where $RESULT is one of {Failed,Passed}
+```
+
 ## Example dashboard
 
 ![example dashboard](https://i.imgur.com/Ym6wIrk.png)
