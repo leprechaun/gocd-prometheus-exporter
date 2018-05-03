@@ -52,6 +52,35 @@ job_count_by_state = Gauge(
     ["gocd_url", "state"]
 )
 
+latest_job_result = Gauge(
+    'gocd_job_latest_result',
+    'pass or fail of the latest job run',
+    [
+        "gocd_url",
+        "pipeline_group",
+        "pipeline",
+        "stage",
+        "stage_key",
+        "job",
+        "job_key"
+    ]
+)
+
+latest_job_date = Gauge(
+    'gocd_job_latest_date',
+    'pass or fail of the latest job run',
+    [
+        "gocd_url",
+        "pipeline_group",
+        "pipeline",
+        "stage",
+        "stage_key",
+        "job",
+        "job_key",
+        "result"
+    ]
+)
+
 job_time_spent_by_state = Summary(
     'gocd_job_time_spent_by_state',
     'time spent in jobs',
@@ -200,6 +229,32 @@ while True:
                     job_key=job_key,
                     state="Completing"
                 ).observe(completing / 1000)
+
+                if job.data.result == "Passed":
+                    up = 1
+                else:
+                    up = 0
+
+                latest_job_date.labels(
+                    gocd_url=GOCD_URL,
+                    pipeline_group=pipeline.group,
+                    pipeline=pipeline.data.name,
+                    stage=stage.data.name,
+                    stage_key=stage_key,
+                    job=job.data.name,
+                    job_key=job_key,
+                    result=job.data.result
+                ).set(int(dates["Completed"]) / 1000)
+
+                latest_job_result.labels(
+                    gocd_url=GOCD_URL,
+                    pipeline_group=pipeline.group,
+                    pipeline=pipeline.data.name,
+                    stage=stage.data.name,
+                    stage_key=stage_key,
+                    job=job.data.name,
+                    job_key=job_key
+                ).set(up)
 
             watched.remove(i)
 
