@@ -52,6 +52,31 @@ job_count_by_state = Gauge(
     ["gocd_url", "state"]
 )
 
+latest_stage_result = Gauge(
+    'gocd_stage_latest_result',
+    'pass or fail of the latest stage run',
+    [
+        "gocd_url",
+        "pipeline_group",
+        "pipeline",
+        "stage",
+        "stage_key"
+    ]
+)
+
+latest_stage_date = Gauge(
+    'gocd_stage_latest_date',
+    'pass or fail of the latest stage run',
+    [
+        "gocd_url",
+        "pipeline_group",
+        "pipeline",
+        "stage",
+        "stage_key",
+        "result"
+    ]
+)
+
 latest_job_result = Gauge(
     'gocd_job_latest_result',
     'pass or fail of the latest job run',
@@ -258,6 +283,32 @@ while True:
                     job=job.data.name,
                     job_key=job_key
                 ).set(up)
+
+            results = set([job.data.result for job in jobs])
+            if len(results) == 1:
+                if list(results)[0] == "Passed":
+                    stage_result = 1
+                    stage_result_string = "Passed"
+                elif list(results)[0] == "Failed":
+                    stage_result_string = "Failed"
+                    stage_result = 0
+
+                latest_stage_result.labels(
+                    gocd_url=GOCD_URL,
+                    pipeline_group=pipeline.group,
+                    pipeline=pipeline.data.name,
+                    stage=stage.data.name,
+                    stage_key=stage_key
+                ).set(stage_result)
+
+                latest_stage_date.labels(
+                    gocd_url=GOCD_URL,
+                    pipeline_group=pipeline.group,
+                    pipeline=pipeline.data.name,
+                    stage=stage.data.name,
+                    stage_key=stage_key,
+                    result=stage_result_string
+                ).set(int(max(dates.values()) / 1000))
 
             watched.remove(i)
 
