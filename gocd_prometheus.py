@@ -91,6 +91,35 @@ latest_job_result = Gauge(
     ]
 )
 
+stage_results = Counter(
+  'gocd_stage_results',
+  'stage counts by result',
+  [
+    "gocd_url",
+    "pipeline_group",
+    "pipeline",
+    "stage",
+    "stage_key",
+    "result"
+  ]
+)
+
+
+job_results = Counter(
+  'gocd_job_results',
+  'job counts by result',
+  [
+    "gocd_url",
+    "pipeline_group",
+    "pipeline",
+    "stage",
+    "stage_key",
+    "job",
+    "job_key",
+    "result"
+  ]
+)
+
 latest_job_date = Gauge(
     'gocd_job_latest_date',
     'pass or fail of the latest job run',
@@ -263,6 +292,17 @@ while True:
                 else:
                     up = 0
 
+                job_results.labels(
+                    gocd_url=GOCD_URL,
+                    pipeline_group=pipeline.group,
+                    pipeline=pipeline.data.name,
+                    stage=stage.data.name,
+                    stage_key=stage_key,
+                    job=job.data.name,
+                    job_key=job_key,
+                    result=job.data.result
+                ).inc(1)
+
                 latest_job_date.labels(
                     gocd_url=GOCD_URL,
                     pipeline_group=pipeline.group,
@@ -292,6 +332,15 @@ while True:
                 elif list(results)[0] == "Failed":
                     stage_result_string = "Failed"
                     stage_result = 0
+
+                stage_results.labels(
+                    gocd_url=GOCD_URL,
+                    pipeline_group=pipeline.group,
+                    pipeline=pipeline.data.name,
+                    stage=stage.data.name,
+                    stage_key=stage_key,
+                    result=stage_result_string
+                ).inc(1)
 
                 latest_stage_result.labels(
                     gocd_url=GOCD_URL,
