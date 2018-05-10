@@ -27,6 +27,9 @@ GOCD_SSL_VERIFY = os.getenv("GOCD_SSL_VERIFY", True) in [
   "true", "True", "yes", "1"
 ]
 
+
+CCTRAY_URL = GOCD_URL + 'go/cctray.xml'
+
 if GOCD_USERNAME is not None and GOCD_PASSWORD is not None:
     credentials = (GOCD_USERNAME, GOCD_PASSWORD)
 else:
@@ -152,10 +155,11 @@ job_time_spent_by_state = Summary(
 
 while True:
     try:
-        xml = requests.get(GOCD_URL + 'go/cctray.xml', verify=GOCD_SSL_VERIFY).text
+        xml = requests.get(CCTRAY_URL, verify=GOCD_SSL_VERIFY, auth=credentials)
         try:
-            tree = ET.fromstring(xml)
+            tree = ET.fromstring(xml.text)
         except:
+            print(CCTRAY_URL)
             print(xml)
 
         for project in tree.findall("Project"):
