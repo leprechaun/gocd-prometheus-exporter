@@ -367,8 +367,8 @@ while True:
                 state=state
             ).set(job_counts_by_state[state])
 
-        time.sleep(1)
-
     except requests.exceptions.ConnectionError as e:
         print(str(e))
         pass
+
+    time.sleep(1)
