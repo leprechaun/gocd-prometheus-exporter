@@ -369,5 +369,6 @@ while True:
 
         time.sleep(1)
 
-    except(requests.exceptions.ConnectionError):
+    except requests.exceptions.ConnectionError as e:
+        print(str(e))
         pass
