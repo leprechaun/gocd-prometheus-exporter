@@ -221,12 +221,13 @@ while True:
               pipeline.group, pipeline.data.name, stage.data.name
             ])
 
-            job_key = "/".join([
-              pipeline.group,
-              pipeline.data.name,
-              stage.data.name,
-              job.data.name
-            ])
+            stage_kwargs = {
+                "gocd_url": GOCD_URL,
+                "pipeline_group": pipeline.group,
+                "pipeline": pipeline.data.name,
+                "stage": stage.data.name,
+                "stage_key": stage_key
+            }
 
             for job in jobs:
                 transitions = job.data.job_state_transitions
@@ -234,15 +235,16 @@ while True:
                   x.state: x.state_change_time for x in transitions
                 }
 
-                job_kwargs = {
-                    "gocd_url": GOCD_URL,
-                    "pipeline_group": pipeline.group,
-                    "pipeline": pipeline.data.name,
-                    "stage": stage.data.name,
-                    "stage_key": stage_key,
-                    "job": job.data.name,
-                    "job_key": job_key
-                }
+                job_key = "/".join([
+                  pipeline.group,
+                  pipeline.data.name,
+                  stage.data.name,
+                  job.data.name
+                ])
+
+                job_kwargs = stage_kwargs.copy()
+                job_kwargs["job"] = job.data.name
+                job_kwargs["job_key"] = job_key
 
                 scheduled = dates["Assigned"] - dates["Scheduled"]
                 job_time_spent_by_state.labels(
