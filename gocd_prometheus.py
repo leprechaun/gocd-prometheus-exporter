@@ -234,64 +234,39 @@ while True:
                   x.state: x.state_change_time for x in transitions
                 }
 
+                job_kwargs = {
+                    "gocd_url": GOCD_URL,
+                    "pipeline_group": pipeline.group,
+                    "pipeline": pipeline.data.name,
+                    "stage": stage.data.name,
+                    "stage_key": stage_key,
+                    "job": job.data.name,
+                    "job_key": job_key
+                }
+
                 scheduled = dates["Assigned"] - dates["Scheduled"]
                 job_time_spent_by_state.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    job=job.data.name,
-                    job_key=job_key,
-                    state="Scheduled"
+                    state="Scheduled", **job_kwargs
                 ).observe(scheduled / 1000)
 
                 assigned = dates["Preparing"] - dates["Assigned"]
                 job_time_spent_by_state.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    job=job.data.name,
-                    job_key=job_key,
-                    state="Assigned"
+                    state="Assigned", **job_kwargs
                 ).observe(assigned / 1000)
 
                 preparing = dates["Building"] - dates["Preparing"]
                 job_time_spent_by_state.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    job=job.data.name,
-                    job_key=job_key,
-                    state="Preparing"
+                    state="Preparing", **job_kwargs
                 ).observe(preparing / 1000)
 
                 building = dates["Completing"] - dates["Building"]
                 job_time_spent_by_state.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    job=job.data.name,
-                    job_key=job_key,
-                    state="Building"
+                    state="Building", **job_kwargs
                 ).observe(building / 1000)
 
                 completing = dates["Completed"] - dates["Completing"]
                 job_time_spent_by_state.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    job=job.data.name,
-                    job_key=job_key,
-                    state="Completing"
+                    state="Completing", **job_kwargs
                 ).observe(completing / 1000)
 
                 if job.data.result == "Passed":
@@ -300,35 +275,17 @@ while True:
                     up = 0
 
                 job_results.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    job=job.data.name,
-                    job_key=job_key,
-                    result=job.data.result
+                    result=job.data.result,
+                    **job_kwargs
                 ).inc(1)
 
                 latest_job_date.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    job=job.data.name,
-                    job_key=job_key,
-                    result=job.data.result
+                    result=job.data.result,
+                    **job_kwargs
                 ).set(int(dates["Completed"]) / 1000)
 
                 latest_job_result.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    job=job.data.name,
-                    job_key=job_key
+                    **job_kwargs
                 ).set(up)
 
             results = set([job.data.result for job in jobs])
