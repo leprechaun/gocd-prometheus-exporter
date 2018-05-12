@@ -300,29 +300,17 @@ while True:
                     stage_result = 0
 
                 stage_results.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    result=stage_result_string
+                    result=stage_result_string,
+                    **stage_kwargs
                 ).inc(1)
 
                 latest_stage_result.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key
+                    **stage_kwargs
                 ).set(stage_result)
 
                 latest_stage_date.labels(
-                    gocd_url=GOCD_URL,
-                    pipeline_group=pipeline.group,
-                    pipeline=pipeline.data.name,
-                    stage=stage.data.name,
-                    stage_key=stage_key,
-                    result=stage_result_string
+                    result=stage_result_string,
+                    **stage_kwargs
                 ).set(int(max(dates.values()) / 1000))
 
             watched.remove(i)
