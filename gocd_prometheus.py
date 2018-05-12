@@ -1,5 +1,4 @@
 import urllib3
-import yaml
 import traceback
 import requests
 import os
