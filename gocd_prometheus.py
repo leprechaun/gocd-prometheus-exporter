@@ -155,12 +155,13 @@ job_time_spent_by_state = Summary(
 
 while True:
     try:
-        xml = requests.get(CCTRAY_URL, verify=GOCD_SSL_VERIFY, auth=credentials)
-        try:
-            tree = ET.fromstring(xml.text)
-        except:
-            print(CCTRAY_URL)
-            print(xml)
+        xml = requests.get(
+          CCTRAY_URL,
+          verify=GOCD_SSL_VERIFY,
+          auth=credentials
+        )
+
+        tree = ET.fromstring(xml.text)
 
         for project in tree.findall("Project"):
             if project.attrib["activity"] != "Sleeping":
