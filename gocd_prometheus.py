@@ -152,6 +152,117 @@ job_time_spent_by_state = Summary(
     ]
 )
 
+
+def stage_finished(pipeline, pipeline_counter, stage):
+    print("stage finished", (pipeline, pipeline_counter, stage))
+    pipeline = go.pipelines[pipeline]
+    instance = pipeline[pipeline_counter]
+    stage = instance[stage]
+    jobs = go.stages.get(
+        pipeline_name=pipeline.data.name,
+        pipeline_counter=instance.data.counter,
+        stage_name=stage.data.name,
+        stage_counter=stage.data.counter
+    ).jobs()
+
+    stage_key = "/".join([
+      pipeline.group, pipeline.data.name, stage.data.name
+    ])
+
+    stage_kwargs = {
+        "gocd_url": GOCD_URL,
+        "pipeline_group": pipeline.group,
+        "pipeline": pipeline.data.name,
+        "stage": stage.data.name,
+        "stage_key": stage_key
+    }
+
+    for job in jobs:
+        transitions = job.data.job_state_transitions
+        dates = {
+          x.state: x.state_change_time for x in transitions
+        }
+
+        job_key = "/".join([
+          pipeline.group,
+          pipeline.data.name,
+          stage.data.name,
+          job.data.name
+        ])
+
+        job_kwargs = stage_kwargs.copy()
+        job_kwargs["job"] = job.data.name
+        job_kwargs["job_key"] = job_key
+
+        scheduled = dates["Assigned"] - dates["Scheduled"]
+        job_time_spent_by_state.labels(
+            state="Scheduled", **job_kwargs
+        ).observe(scheduled / 1000)
+
+        assigned = dates["Preparing"] - dates["Assigned"]
+        job_time_spent_by_state.labels(
+            state="Assigned", **job_kwargs
+        ).observe(assigned / 1000)
+
+        preparing = dates["Building"] - dates["Preparing"]
+        job_time_spent_by_state.labels(
+            state="Preparing", **job_kwargs
+        ).observe(preparing / 1000)
+
+        building = dates["Completing"] - dates["Building"]
+        job_time_spent_by_state.labels(
+            state="Building", **job_kwargs
+        ).observe(building / 1000)
+
+        completing = dates["Completed"] - dates["Completing"]
+        job_time_spent_by_state.labels(
+            state="Completing", **job_kwargs
+        ).observe(completing / 1000)
+
+        if job.data.result == "Passed":
+            up = 1
+        else:
+            up = 0
+
+        job_results.labels(
+            result=job.data.result,
+            **job_kwargs
+        ).inc(1)
+
+        latest_job_date.labels(
+            result=job.data.result,
+            **job_kwargs
+        ).set(int(dates["Completed"]) / 1000)
+
+        latest_job_result.labels(
+            **job_kwargs
+        ).set(up)
+
+    results = set([job.data.result for job in jobs])
+    if len(results) == 1:
+        if list(results)[0] == "Passed":
+            stage_result = 1
+            stage_result_string = "Passed"
+        elif list(results)[0] == "Failed":
+            stage_result_string = "Failed"
+            stage_result = 0
+
+        stage_results.labels(
+            result=stage_result_string,
+            **stage_kwargs
+        ).inc(1)
+
+        latest_stage_result.labels(
+            **stage_kwargs
+        ).set(stage_result)
+
+        latest_stage_date.labels(
+            result=stage_result_string,
+            **stage_kwargs
+        ).set(int(max(dates.values()) / 1000))
+
+
+
 while True:
     try:
         xml = requests.get(
@@ -206,112 +317,7 @@ while True:
                 to_remove.add(i)
 
         for i in to_remove:
-            pipeline = go.pipelines[i[0]]
-            instance = pipeline[i[3]]
-            stage = instance[i[1]]
-            jobs = go.stages.get(
-                pipeline_name=pipeline.data.name,
-                pipeline_counter=instance.data.counter,
-                stage_name=stage.data.name,
-                stage_counter=stage.data.counter
-            ).jobs()
-
-            stage_key = "/".join([
-              pipeline.group, pipeline.data.name, stage.data.name
-            ])
-
-            stage_kwargs = {
-                "gocd_url": GOCD_URL,
-                "pipeline_group": pipeline.group,
-                "pipeline": pipeline.data.name,
-                "stage": stage.data.name,
-                "stage_key": stage_key
-            }
-
-            for job in jobs:
-                transitions = job.data.job_state_transitions
-                dates = {
-                  x.state: x.state_change_time for x in transitions
-                }
-
-                job_key = "/".join([
-                  pipeline.group,
-                  pipeline.data.name,
-                  stage.data.name,
-                  job.data.name
-                ])
-
-                job_kwargs = stage_kwargs.copy()
-                job_kwargs["job"] = job.data.name
-                job_kwargs["job_key"] = job_key
-
-                scheduled = dates["Assigned"] - dates["Scheduled"]
-                job_time_spent_by_state.labels(
-                    state="Scheduled", **job_kwargs
-                ).observe(scheduled / 1000)
-
-                assigned = dates["Preparing"] - dates["Assigned"]
-                job_time_spent_by_state.labels(
-                    state="Assigned", **job_kwargs
-                ).observe(assigned / 1000)
-
-                preparing = dates["Building"] - dates["Preparing"]
-                job_time_spent_by_state.labels(
-                    state="Preparing", **job_kwargs
-                ).observe(preparing / 1000)
-
-                building = dates["Completing"] - dates["Building"]
-                job_time_spent_by_state.labels(
-                    state="Building", **job_kwargs
-                ).observe(building / 1000)
-
-                completing = dates["Completed"] - dates["Completing"]
-                job_time_spent_by_state.labels(
-                    state="Completing", **job_kwargs
-                ).observe(completing / 1000)
-
-                if job.data.result == "Passed":
-                    up = 1
-                else:
-                    up = 0
-
-                job_results.labels(
-                    result=job.data.result,
-                    **job_kwargs
-                ).inc(1)
-
-                latest_job_date.labels(
-                    result=job.data.result,
-                    **job_kwargs
-                ).set(int(dates["Completed"]) / 1000)
-
-                latest_job_result.labels(
-                    **job_kwargs
-                ).set(up)
-
-            results = set([job.data.result for job in jobs])
-            if len(results) == 1:
-                if list(results)[0] == "Passed":
-                    stage_result = 1
-                    stage_result_string = "Passed"
-                elif list(results)[0] == "Failed":
-                    stage_result_string = "Failed"
-                    stage_result = 0
-
-                stage_results.labels(
-                    result=stage_result_string,
-                    **stage_kwargs
-                ).inc(1)
-
-                latest_stage_result.labels(
-                    **stage_kwargs
-                ).set(stage_result)
-
-                latest_stage_date.labels(
-                    result=stage_result_string,
-                    **stage_kwargs
-                ).set(int(max(dates.values()) / 1000))
-
+            stage_finished(i[0], i[3], i[1])
             watched.remove(i)
 
         for state in job_counts_by_state:
