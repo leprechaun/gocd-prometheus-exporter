@@ -152,12 +152,31 @@ job_time_spent_by_state = Summary(
     ]
 )
 
+def is_instance_finished(pipeline, pipeline_counter, stage):
+    for stage in instance.stages():
+      print(stage.data)
 
-def stage_finished(pipeline, pipeline_counter, stage):
-    print("stage finished", (pipeline, pipeline_counter, stage))
-    pipeline = go.pipelines[pipeline]
+    stage_count = len(instance.stages())
+    stage_results = [s.data.result for s in instance.stages()]
+    print(stage_count)
+    print(stage_results)
+
+    if 'Unknown' in stage_results:
+      print("pipeline-instance NOT finished")
+      return False
+    else:
+      print("pipeline-instance finished")
+      return True
+
+
+def stage_finished(pipeline_name, pipeline_counter, stage_name):
+    print("stage finished", (pipeline_name, pipeline_counter, stage_name))
+
+    is_instance_finished(pipeline_name, pipeline_counter, stage_name)
+
+    pipeline = go.pipelines[pipeline_name]
     instance = pipeline[pipeline_counter]
-    stage = instance[stage]
+    stage = instance[stage_name]
     jobs = go.stages.get(
         pipeline_name=pipeline.data.name,
         pipeline_counter=instance.data.counter,
@@ -239,6 +258,7 @@ def stage_finished(pipeline, pipeline_counter, stage):
         ).set(up)
 
     results = set([job.data.result for job in jobs])
+    print(results)
     if len(results) == 1:
         if list(results)[0] == "Passed":
             stage_result = 1
