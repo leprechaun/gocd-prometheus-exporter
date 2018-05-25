@@ -152,9 +152,10 @@ job_time_spent_by_state = Summary(
     ]
 )
 
+
 def is_instance_finished(pipeline, pipeline_counter, stage):
     for stage in instance.stages():
-      print(stage.data)
+        print(stage.data)
 
     stage_count = len(instance.stages())
     stage_results = [s.data.result for s in instance.stages()]
@@ -162,11 +163,11 @@ def is_instance_finished(pipeline, pipeline_counter, stage):
     print(stage_results)
 
     if 'Unknown' in stage_results:
-      print("pipeline-instance NOT finished")
-      return False
+        print("pipeline-instance NOT finished")
+        return False
     else:
-      print("pipeline-instance finished")
-      return True
+        print("pipeline-instance finished")
+        return True
 
 
 def stage_finished(pipeline_name, pipeline_counter, stage_name):
@@ -280,7 +281,6 @@ def stage_finished(pipeline_name, pipeline_counter, stage_name):
             result=stage_result_string,
             **stage_kwargs
         ).set(int(max(dates.values()) / 1000))
-
 
 
 while True:
