@@ -36,6 +36,10 @@ spec:
           env:
             - name: GOCD_URL
               value: {{ .Values.configuration.gocd_url }}
+            - name: GOCD_USERNAME
+              value: {{ .Values.configuration.gocd_username }}
+            - name: GOCD_PASSWORD
+              value: {{ .Values.configuration.gocd_password }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- if .Values.nodeSelector }}

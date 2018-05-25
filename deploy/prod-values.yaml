@@ -7,3 +7,5 @@ ingress:
     - gocd-prometheus-exporter.ci.k8s.fscker.org
 configuration:
   gocd_url: https://gocd.k8s.fscker.org/
+  gocd_username: CHANGEME
+  gocd_username: CHANGEME
