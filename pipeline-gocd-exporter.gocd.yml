@@ -84,6 +84,8 @@ pipelines:
       HELM_CHART_NAME: gocd-prometheus-exporter
       HELM_RELEASE_BASE_NAME: gocd-prometheus-exporter
       HELM_DEPLOY_NAMESPACE: dev
+    secure_variables:
+      GOCD_VIEWER_PASSWORD: 4mw1lv5j8LQrfNKGm5l01g==
     materials:
       upstream:
         pipeline: gocd-exporter-build
@@ -107,7 +109,8 @@ pipelines:
                 helm upgrade --debug --wait --install \
                   --namespace ${HELM_DEPLOY_NAMESPACE} \
                   ${HELM_RELEASE_BASE_NAME}-dev ./chart/${HELM_CHART_NAME}* \
-                  --values deploy/dev-values.yaml
+                  --values deploy/dev-values.yaml \
+                  --set configuration.gocd_password=${GOCD_VIEWER_PASSWORD}
 
   gocd-exporter-deploy-prod:
     group: gocd-exporter
@@ -117,6 +120,8 @@ pipelines:
       HELM_CHART_NAME: gocd-prometheus-exporter
       HELM_RELEASE_BASE_NAME: gocd-prometheus-exporter
       HELM_DEPLOY_NAMESPACE: ci
+    secure_variables:
+      GOCD_VIEWER_PASSWORD: 4mw1lv5j8LQrfNKGm5l01g==
     materials:
       upstream:
         pipeline: gocd-exporter-deploy-dev
@@ -141,4 +146,5 @@ pipelines:
                 helm upgrade --debug --wait --install \
                   --namespace ${HELM_DEPLOY_NAMESPACE} \
                   ${HELM_RELEASE_BASE_NAME}-${HELM_DEPLOY_NAMESPACE} ./chart/${HELM_CHART_NAME}* \
-                  --values deploy/prod-values.yaml
+                  --values deploy/prod-values.yaml \
+                  --set configuration.gocd_password=${GOCD_VIEWER_PASSWORD}
