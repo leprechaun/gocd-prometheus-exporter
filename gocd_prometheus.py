@@ -306,6 +306,7 @@ while True:
                         parsedLink[10]
                     )
                     if to_add not in watched:
+                        print("adding", to_add)
                         watched.add(to_add)
 
         to_remove = set([])
