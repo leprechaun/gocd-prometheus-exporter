@@ -292,8 +292,6 @@ while True:
         )
 
         tree = ET.fromstring(xml.text.encode('utf-8'))
-        print("got cctray")
-        print(str(xml.text))
 
         for project in tree.findall("Project"):
             if project.attrib["activity"] != "Sleeping":
