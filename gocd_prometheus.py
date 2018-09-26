@@ -291,7 +291,7 @@ while True:
           auth=credentials
         )
 
-        tree = ET.fromstring(xml.text)
+        tree = ET.fromstring(xml.text.encode('utf-8'))
 
         for project in tree.findall("Project"):
             if project.attrib["activity"] != "Sleeping":
