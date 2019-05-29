@@ -158,7 +158,7 @@ def is_instance_finished(pipeline, pipeline_counter, stage):
         print(stage.data)
 
     stage_count = len(instance.stages())
-    stage_results = [s.data.result for s in instance.stages()]
+    stage_results = [s.data.result if 'result' in s.data else 'Unknown' for s in instance.stages()]
     print(stage_count)
     print(stage_results)
 
@@ -292,6 +292,7 @@ while True:
         )
 
         tree = ET.fromstring(xml.text.encode('utf-8'))
+        print(xml)
 
         for project in tree.findall("Project"):
             if project.attrib["activity"] != "Sleeping":

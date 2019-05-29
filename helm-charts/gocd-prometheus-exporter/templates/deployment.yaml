@@ -40,6 +40,8 @@ spec:
               value: {{ .Values.configuration.gocd_username }}
             - name: GOCD_PASSWORD
               value: {{ .Values.configuration.gocd_password }}
+            - name: PYTHONUNBUFFERED
+              value: "yes"
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- if .Values.nodeSelector }}
