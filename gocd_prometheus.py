@@ -19,7 +19,7 @@ urllib3.disable_warnings()
 
 
 GOCD_URL = os.getenv("GOCD_URL")
-EXPOSE_PORT = os.getenv("PROMETHEUS_PORT", 8000)
+EXPOSE_PORT = int(os.getenv("PROMETHEUS_PORT", 8000))
 GOCD_USERNAME = os.getenv("GOCD_USERNAME")
 GOCD_PASSWORD = os.getenv("GOCD_PASSWORD")
 GOCD_SSL_VERIFY = os.getenv("GOCD_SSL_VERIFY", True) in [
