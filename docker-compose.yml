@@ -1,7 +1,7 @@
 version: "2"
 services:
   dev:
-    image: python:2
+    image: python:3
     command: bash
     working_dir: /code/
     environment:
